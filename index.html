@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cozy DSA Study Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #FDFBF7;
+            --accent-green: #A3B899;
+            --accent-green-hover: #8A9D81;
+            --accent-beige: #E6E2D6;
+            --accent-brown: #8D7B68;
+            --text-dark: #3E362E;
+            --text-light: #7A7065;
+            --border-soft: #D1C7BD;
+            --white: #FFFFFF;
+            --danger: #D48484;
+            --danger-hover: #B86B6B;
+            --shadow-sm: 0 2px 8px rgba(141, 123, 104, 0.08);
+            --shadow-md: 0 4px 16px rgba(141, 123, 104, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--accent-beige);
+        }
+
+        .title-area h1 {
+            font-size: 1.5rem;
+            color: var(--accent-brown);
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--accent-brown);
+            color: var(--accent-brown);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--accent-beige);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-green);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-green-hover);
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger);
+            color: var(--white);
+        }
+        
+        .btn-icon {
+            background-color: var(--accent-beige);
+            color: var(--text-dark);
+            padding: 8px 12px;
+        }
+
+        .btn-icon:hover {
+            background-color: var(--border-soft);
+        }
+
+        .month-display {
+            font-weight: 600;
+            font-size: 1.1rem;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        /* Calendar Grid */
+        .calendar-wrapper {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--accent-beige);
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: 600;
+            color: var(--accent-brown);
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 8px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background-color: var(--bg-cream);
+        }
+
+        .day-cell:hover:not(.empty) {
+            border-color: var(--accent-green);
+            background-color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .day-cell.empty {
+            background-color: transparent;
+            cursor: default;
+        }
+
+        .day-number {
+            font-weight: 500;
+            font-size: 1rem;
+            z-index: 2;
+        }
+
+        .day-cell.today .day-number {
+            background-color: var(--accent-brown);
+            color: var(--white);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-top: -4px;
+        }
+
+        .day-cell.has-entry {
+            background-color: #F4F7F2; /* very light green hint */
+            border-color: var(--accent-beige);
+        }
+
+        .entry-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            margin-top: auto;
+            margin-bottom: 12px;
+        }
+
+        /* Stats */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border: 1px solid var(--accent-beige);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-green);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(62, 54, 46, 0.4);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Modals */
+        .modal {
+            background: var(--bg-cream);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--accent-beige);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: var(--accent-brown);
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-light);
+        }
+
+        input[type="number"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            background: var(--white);
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-group input {
+            accent-color: var(--accent-green);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--accent-beige);
+        }
+
+        /* Status messages */
+        #status-msg {
+            text-align: center;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            min-height: 20px;
+        }
+        .status-loading { color: var(--accent-brown); }
+        .status-success { color: var(--accent-green); }
+        .status-error { color: var(--danger); }
+
+        @media (max-width: 600px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="title-area">
+                <h1>DSA Study Calendar</h1>
+            </div>
+            <div class="controls">
+                <button class="btn-outline" id="btn-today">Today</button>
+                <button class="btn-icon" id="btn-prev">&lt;</button>
+                <div class="month-display" id="month-display">October 2026</div>
+                <button class="btn-icon" id="btn-next">&gt;</button>
+            </div>
+        </header>
+
+        <main class="calendar-wrapper">
+            <div class="weekdays">
+                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+            <div class="days-grid" id="days-grid">
+                <!-- Days will be generated here -->
+            </div>
+        </main>
+
+        <section class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-lectures">0</div>
+                <div class="stat-label">Lectures Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-problems">0</div>
+                <div class="stat-label">Problems Solved</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-days">0</div>
+                <div class="stat-label">Study Days</div>
+            </div>
+        </section>
+        
+        <div id="status-msg"></div>
+    </div>
+
+    <!-- Entry Modal -->
+    <div class="modal-overlay" id="entry-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-date-title">Study Entry</h2>
+                <button class="btn-icon" id="btn-close-modal" style="border-radius: 50%; padding: 4px 10px;">&times;</button>
+            </div>
+            
+            <form id="entry-form">
+                <input type="hidden" id="entry-date">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lectures-completed">Lectures Completed</label>
+                        <input type="number" id="lectures-completed" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="problems-solved">Problems Solved</label>
+                        <input type="number" id="problems-solved" min="0" value="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="problems-attempted">Problems Attempted</label>
+                    <input type="number" id="problems-attempted" min="0" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="lecture-details">Topics / Lecture Details</label>
+                    <input type="text" id="lecture-details" placeholder="e.g., Binary Search, Graph BFS">
+                </div>
+
+                <div class="form-group">
+                    <label for="comments">Comments & Notes</label>
+                    <textarea id="comments" placeholder="How did the session go? Any tough bugs?"></textarea>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="revisit-topic">
+                    <label for="revisit-topic">Needs Revision</label>
+                </div>
+
+                <div class="form-group" id="revision-note-group" style="display: none;">
+                    <label for="revision-note">Revision Note</label>
+                    <input type="text" id="revision-note" placeholder="What exactly needs revisiting?">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-danger" id="btn-delete" style="display: none;">Delete</button>
+                    <div style="flex-grow: 1;"></div>
+                    <button type="button" class="btn-outline" id="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary" id="btn-save">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Alert/Confirm Modal -->
+    <div class="modal-overlay" id="msg-modal">
+        <div class="modal" style="max-width: 350px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="msg-title">Notification</h2>
+            </div>
+            <p id="msg-body" style="color: var(--text-dark); margin-bottom: 24px; line-height: 1.5;"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn-outline" id="btn-msg-cancel" style="display: none;">Cancel</button>
+                <button type="button" class="btn-primary" id="btn-msg-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration (Provided by User)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4eoofAdY4DrW-VKvfGJl5aNv2hoCTn4c",
+            authDomain: "iist-fd6e8.firebaseapp.com",
+            databaseURL: "https://iist-fd6e8-default-rtdb.firebaseio.com",
+            projectId: "iist-fd6e8",
+            storageBucket: "iist-fd6e8.firebasestorage.app",
+            messagingSenderId: "692699808449",
+            appId: "1:692699808449:web:120c8941a940d071f24a40",
+            measurementId: "G-GPFG8LWF2H"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // State Variables
+        let currentUserId = null;
+        const fallbackAppId = typeof __app_id !== 'undefined' ? __app_id : 'dsa-calendar-app';
+        let studyEntries = {}; 
+        let unsubscribeSnapshot = null;
+
+        // Date state (Start in Oct 2026 based on prompt constraints)
+        let currentDate = new Date(2026, 9, 1); // Oct is month 9 in JS
+        const realToday = new Date(); // To highlight actual current day
+
+        // DOM Elements
+        const daysGrid = document.getElementById('days-grid');
+        const monthDisplay = document.getElementById('month-display');
+        const statusMsg = document.getElementById('status-msg');
+        
+        const entryModal = document.getElementById('entry-modal');
+        const entryForm = document.getElementById('entry-form');
+        const revisitCheckbox = document.getElementById('revisit-topic');
+        const revisionNoteGroup = document.getElementById('revision-note-group');
+        
+        // Custom Msg Box Elements
+        const msgModal = document.getElementById('msg-modal');
+        const msgTitle = document.getElementById('msg-title');
+        const msgBody = document.getElementById('msg-body');
+        const btnMsgCancel = document.getElementById('btn-msg-cancel');
+        const btnMsgConfirm = document.getElementById('btn-msg-confirm');
+        let confirmCallback = null;
+
+        // Custom Alert & Confirm functions
+        function showMsg(title, message, isConfirm = false, onConfirm = null) {
+            msgTitle.textContent = title;
+            msgBody.textContent = message;
+            if (isConfirm) {
+                btnMsgCancel.style.display = 'block';
+                confirmCallback = onConfirm;
+            } else {
+                btnMsgCancel.style.display = 'none';
+                confirmCallback = null;
+            }
+            msgModal.classList.add('active');
+        }
+
+        btnMsgCancel.addEventListener('click', () => {
+            msgModal.classList.remove('active');
+        });
+
+        btnMsgConfirm.addEventListener('click', () => {
+            msgModal.classList.remove('active');
+            if (confirmCallback) confirmCallback();
+        });
+
+        function setStatus(msg, type) {
+            statusMsg.textContent = msg;
+            statusMsg.className = type ? `status-${type}` : '';
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => { statusMsg.textContent = ''; }, 4000);
+            }
+        }
+
+        // Authentication & Data Loading
+        async function initApp() {
+            setStatus('Connecting to database...', 'loading');
+            try {
+                // Mandatory Rule: Authenticate before Firestore queries
+                const userCredential = await signInAnonymously(auth);
+                currentUserId = userCredential.user.uid;
+                loadData();
+            } catch (error) {
+                console.error("Auth Error:", error);
+                setStatus('Failed to connect to database.', 'error');
+                showMsg('Connection Error', 'Could not authenticate with Firebase. Check configuration and network.');
+            }
+        }
+
+        function loadData() {
+            if (!currentUserId) return;
+            
+            // Mandatory Rule: Strict pathing
+            const entriesRef = collection(db, 'artifacts', fallbackAppId, 'users', currentUserId, 'studyEntries');
+            
+            setStatus('Loading calendar data...', 'loading');
+            
+            // Listen for realtime updates
+            unsubscribeSnapshot = onSnapshot(entriesRef, (snapshot) => {
+                studyEntries = {};
+                snapshot.forEach((doc) => {
+                    studyEntries[doc.id] = doc.data();
+                });
+                renderCalendar();
+                updateStats();
+                setStatus('Data loaded successfully.', 'success');
+            }, (error) => {
+                console.error("Snapshot Error:", error);
+                setStatus('Error loading data.', 'error');
+            });
+        }
+
+        // Calendar Rendering Logic
+        function renderCalendar() {
+            daysGrid.innerHTML = '';
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Set Header Text
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthDisplay.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Fill empty slots before 1st of month
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell empty';
+                daysGrid.appendChild(emptyCell);
+            }
+
+            // Fill days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                
+                // Format YYYY-MM-DD local logic safely
+                const monthStr = String(month + 1).padStart(2, '0');
+                const dayStr = String(i).padStart(2, '0');
+                const dateKey = `${year}-${monthStr}-${dayStr}`;
+
+                const dayNum = document.createElement('div');
+                dayNum.className = 'day-number';
+                dayNum.textContent = i;
+                dayCell.appendChild(dayNum);
+
+                // Highlight actual Today
+                if (year === realToday.getFullYear() && month === realToday.getMonth() && i === realToday.getDate()) {
+                    dayCell.classList.add('today');
+                }
+
+                // Check for entry
+                if (studyEntries[dateKey]) {
+                    dayCell.classList.add('has-entry');
+                    const dot = document.createElement('div');
+                    dot.className = 'entry-dot';
+                    dayCell.appendChild(dot);
+                }
+
+                dayCell.addEventListener('click', () => openEntryModal(dateKey));
+                daysGrid.appendChild(dayCell);
+            }
+        }
+
+        // Navigation
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        document.getElementById('btn-today').addEventListener('click', () => {
+            currentDate = new Date(realToday.getFullYear(), realToday.getMonth(), 1);
+            renderCalendar();
+        });
+
+        // Stats Calculation
+        function updateStats() {
+            let totalLectures = 0;
+            let totalProblems = 0;
+            let totalDays = 0;
+
+            for (const key in studyEntries) {
+                const entry = studyEntries[key];
+                totalLectures += (parseInt(entry.lecturesCompleted) || 0);
+                totalProblems += (parseInt(entry.problemsSolved) || 0);
+                totalDays++;
+            }
+
+            document.getElementById('stat-lectures').textContent = totalLectures;
+            document.getElementById('stat-problems').textContent = totalProblems;
+            document.getElementById('stat-days').textContent = totalDays;
+        }
+
+        // Modal Logic
+        function openEntryModal(dateStr) {
+            entryForm.reset();
+            document.getElementById('entry-date').value = dateStr;
+            
+            // Format nice date for title
+            const [y, m, d] = dateStr.split('-');
+            const displayDate = new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('modal-date-title').textContent = displayDate;
+
+            const entry = studyEntries[dateStr];
+            const btnDelete = document.getElementById('btn-delete');
+
+            if (entry) {
+                document.getElementById('lectures-completed').value = entry.lecturesCompleted || 0;
+                document.getElementById('problems-solved').value = entry.problemsSolved || 0;
+                document.getElementById('problems-attempted').value = entry.problemsAttempted || 0;
+                document.getElementById('lecture-details').value = entry.lectureDetails || '';
+                document.getElementById('comments').value = entry.comments || '';
+                
+                revisitCheckbox.checked = entry.needsRevision || false;
+                revisionNoteGroup.style.display = entry.needsRevision ? 'block' : 'none';
+                document.getElementById('revision-note').value = entry.revisionNote || '';
+                
+                btnDelete.style.display = 'block';
+            } else {
+                revisionNoteGroup.style.display = 'none';
+                btnDelete.style.display = 'none';
+            }
+
+            entryModal.classList.add('active');
+        }
+
+        function closeEntryModal() {
+            entryModal.classList.remove('active');
+        }
+
+        revisitCheckbox.addEventListener('change', (e) => {
+            revisionNoteGroup.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        document.getElementById('btn-close-modal').addEventListener('click', closeEntryModal);
+        document.getElementById('btn-cancel').addEventListener('click', closeEntryModal);
+
+        // Save & Delete Logic
+        entryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUserId) return showMsg('Error', 'Not connected to database.');
+
+            const dateKey = document.getElementById('entry-date').value;
+            
+            // Validation
+            const lCompleted = parseInt(document.getElementById('lectures-completed').value) || 0;
+            const pSolved = parseInt(document.getElementById('problems-solved').value) || 0;
+            const pAttempted = parseInt(document.getElementById('problems-attempted').value) || 0;
+
+            if (lCompleted < 0 || pSolved < 0 || pAttempted < 0) {
+                return showMsg('Invalid Input', 'Counts cannot be negative.');
+            }
+
+            const data = {
+                date: dateKey,
+                lecturesCompleted: lCompleted,
+                problemsSolved: pSolved,
+                problemsAttempted: pAttempted,
+                lectureDetails: document.getElementById('lecture-details').value.trim(),
+                comments: document.getElementById('comments').value.trim(),
+                needsRevision: revisitCheckbox.checked,
+                revisionNote: revisitCheckbox.checked ? document.getElementById('revision-note').value.trim() : '',
+                updatedAt: new Date().toISOString()
+            };
+
+            setStatus('Saving entry...', 'loading');
+            closeEntryModal();
+
+            try {
+                const docRef = doc(db, 'artifacts', fallbackAppId, 'users', currentUserId, 'studyEntries', dateKey);
+                await setDoc(docRef, data);
+                setStatus('Entry saved successfully.', 'success');
+            } catch (error) {
+                console.error("Save Error:", error);
+                setStatus('Failed to save entry.', 'error');
+                showMsg('Save Error', 'An error occurred while saving. Please try again.');
+            }
+        });
+
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            showMsg('Delete Entry', 'Are you sure you want to delete the study entry for this day?', true, async () => {
+                if (!currentUserId) return;
+                const dateKey = document.getElementById('entry-date').value;
+                setStatus('Deleting entry...', 'loading');
+                closeEntryModal();
+                
+                try {
+                    const docRef = doc(db, 'artifacts', fallbackAppId, 'users', currentUserId, 'studyEntries', dateKey);
+                    await deleteDoc(docRef);
+                    setStatus('Entry deleted.', 'success');
+                } catch (error) {
+                    console.error("Delete Error:", error);
+                    setStatus('Failed to delete entry.', 'error');
+                    showMsg('Delete Error', 'An error occurred while deleting.');
+                }
+            });
+        });
+
+        // Initialize App on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCalendar();
+            initApp();
+        });
+
+    </script>
+</body>
+</html>
