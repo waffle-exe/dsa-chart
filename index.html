@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DSA Study Calendar</title>
+  <!-- Inline SVG favicon: a little calendar with a sage check mark -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='10' width='52' height='48' rx='10' fill='%23faf6ee' stroke='%237a5f4a' stroke-width='4'/%3E%3Cpath d='M6 24h52v-4a10 10 0 0 0-10-10H16A10 10 0 0 0 6 20z' fill='%237a5f4a'/%3E%3Crect x='18' y='3' width='6' height='13' rx='3' fill='%239db39a'/%3E%3Crect x='40' y='3' width='6' height='13' rx='3' fill='%239db39a'/%3E%3Cpath d='M20 41l9 9 16-17' fill='none' stroke='%236f8a6c' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -214,8 +216,8 @@
     <form id="entryForm" method="dialog" novalidate>
       <h3 id="dialogTitle">Study entry</h3>
 
-      <label for="fDate">Date</label>
-      <input type="date" id="fDate" readonly />
+      <!-- The date is already shown in the title above, so it's kept as a hidden field -->
+      <input type="hidden" id="fDate" />
 
       <div class="row">
         <div>
