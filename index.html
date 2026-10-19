@@ -6,6 +6,12 @@
   <title>DSA Study Calendar</title>
   <!-- Inline SVG favicon: a little calendar with a sage check mark -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='10' width='52' height='48' rx='10' fill='%23faf6ee' stroke='%237a5f4a' stroke-width='4'/%3E%3Cpath d='M6 24h52v-4a10 10 0 0 0-10-10H16A10 10 0 0 0 6 20z' fill='%237a5f4a'/%3E%3Crect x='18' y='3' width='6' height='13' rx='3' fill='%239db39a'/%3E%3Crect x='40' y='3' width='6' height='13' rx='3' fill='%239db39a'/%3E%3Cpath d='M20 41l9 9 16-17' fill='none' stroke='%236f8a6c' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <!-- Speed: start connecting to Firebase and download its code early -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://iist-fd6e8-default-rtdb.firebaseio.com" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -264,7 +270,7 @@
   <script type="module">
     // DSA Study Calendar — vanilla JS + Firebase Realtime Database (modular SDK via CDN)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     /* ---------- Firebase setup ---------- */
@@ -313,27 +319,53 @@
       statusBox.className = "status " + type;
     }
 
-    /* ---------- Load from Firebase ---------- */
-    async function loadEntries() {
-      setStatus("Loading your entries…");
-      try {
-        // Try a silent anonymous sign-in. If it isn't enabled, carry on; the
-        // database rules then decide whether reads/writes are allowed.
-        try { await signInAnonymously(auth); } catch (e) { console.warn("Anonymous auth unavailable:", e.code); }
+    /* ---------- Realtime sync with Firebase ---------- */
+    const CACHE_KEY = "dsaStudyEntriesCache";
+    let online = false;        // true while connected to the Firebase server
+    let triedSignIn = false;   // so we only attempt the silent sign-in once
 
-        const snap = await get(ref(db, "studyEntries"));
+    // 1) Show the last known data instantly (read-only copy) while Firebase connects.
+    function showCached() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+        if (cached) {
+          entries = cached;
+          render();
+          setStatus("Showing your last synced copy — connecting live…");
+        }
+      } catch (e) { /* ignore a broken cache */ }
+    }
+
+    // 2) Listen live: every change (from this or any other device) arrives instantly.
+    function startLiveSync() {
+      onValue(ref(db, "studyEntries"), (snap) => {
         entries = snap.exists() ? snap.val() : {};
         loaded = true;
-        setStatus("Connected. Entries loaded from Firebase.", "ok");
-      } catch (err) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(entries)); } catch (e) {}
+        setStatus("Live · synced with Firebase", "ok");
+        render();
+      }, async (err) => {
         loaded = false;
-        console.error(err);
         const denied = String(err.code || err.message).toLowerCase().includes("permission");
+        // First denial: sign in silently (anonymous) and listen again.
+        // Returning visitors skip this because Firebase remembers the sign-in.
+        if (denied && !triedSignIn) {
+          triedSignIn = true;
+          try { await signInAnonymously(auth); startLiveSync(); return; }
+          catch (e) { console.warn("Anonymous auth unavailable:", e.code); }
+        }
+        console.error(err);
         setStatus(denied
           ? "Firebase denied access (permission_denied). Check your database rules — see the setup steps."
-          : "Could not load entries. Check your connection and Firebase config, then refresh.", "error");
-      }
-      render();
+          : "Could not connect to Firebase. Check your connection and config, then refresh.", "error");
+        render();
+      });
+
+      // Track the connection so the banner and Save button tell the truth.
+      onValue(ref(db, ".info/connected"), (snap) => {
+        online = snap.val() === true;
+        if (loaded) setStatus(online ? "Live · synced with Firebase" : "Offline — reconnecting…", online ? "ok" : "error");
+      });
     }
 
     /* ---------- Rendering ---------- */
@@ -493,6 +525,7 @@
         return;
       }
 
+      if (!online) { setMessage("You're offline — nothing was saved. Reconnect and try again."); return; }
       setBusy(true);
       setMessage("Saving…", true);
       try {
@@ -516,6 +549,7 @@
       const key = $("fDate").value;
       if (!confirm(`Delete the entry for ${prettyDate(key)}? This can't be undone.`)) return;
 
+      if (!online) { setMessage("You're offline — nothing was deleted. Reconnect and try again."); return; }
       setBusy(true);
       setMessage("Deleting…", true);
       try {
@@ -533,8 +567,9 @@
     });
 
     /* ---------- Start ---------- */
-    render();       // draw an empty calendar immediately
-    loadEntries();  // then load saved data
+    render();           // draw the calendar immediately
+    showCached();       // fill it from the local copy, if any
+    startLiveSync();    // then connect live
   </script>
 </body>
 </html>
